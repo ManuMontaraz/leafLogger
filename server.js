@@ -4,8 +4,21 @@ const mysql = require('mysql2/promise');
 const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
+const cors = require('cors');
 
 const app = express();
+
+// Configuración CORS
+const CORS_ORIGIN = process.env.CORS_ORIGIN;
+if (CORS_ORIGIN) {
+    const corsOptions = CORS_ORIGIN === '*' 
+        ? { origin: true, credentials: false }
+        : { origin: CORS_ORIGIN.split(',').map(o => o.trim()), credentials: true };
+    app.use(cors(corsOptions));
+    console.log(`🌐 CORS habilitado para: ${CORS_ORIGIN}`);
+} else {
+    console.log('🌐 CORS deshabilitado (sin CORS_ORIGIN en .env)');
+}
 
 // Configuración desde .env
 const PORT = process.env.PORT || 3000;
@@ -73,6 +86,36 @@ function sanitizeRouteName(name) {
         .replace(/[^a-z0-9-_]/g, '-')
         .replace(/-+/g, '-')
         .substring(0, 100);
+}
+
+// Convertir fecha ISO 8601 a formato MySQL DATETIME
+function toMySQLDateTime(dateInput) {
+    // Si no hay entrada, usar fecha actual
+    if (!dateInput) {
+        return new Date().toISOString().slice(0, 19).replace('T', ' ');
+    }
+
+    // Si ya está en formato MySQL (sin T ni Z), devolverlo tal cual
+    if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(dateInput)) {
+        return dateInput;
+    }
+
+    try {
+        // Intentar parsear como ISO 8601
+        const date = new Date(dateInput);
+        
+        // Verificar si la fecha es válida
+        if (isNaN(date.getTime())) {
+            console.warn(`⚠️ Fecha inválida recibida: ${dateInput}, usando fecha actual`);
+            return new Date().toISOString().slice(0, 19).replace('T', ' ');
+        }
+        
+        // Convertir a formato MySQL: YYYY-MM-DD HH:MM:SS
+        return date.toISOString().slice(0, 19).replace('T', ' ');
+    } catch (error) {
+        console.warn(`⚠️ Error parseando fecha: ${dateInput}, usando fecha actual`);
+        return new Date().toISOString().slice(0, 19).replace('T', ' ');
+    }
 }
 
 // Validar coordenadas GPS
@@ -236,15 +279,15 @@ app.post('/api/track', verifyToken, async (req, res) => {
         const connection = await pool.getConnection();
         
         await connection.execute(
-            `INSERT INTO tracks (route_name, latitude, longitude, altitude, timestamp_utc, speed) 
+            `INSERT INTO tracks (route_name, latitude, longitude, altitude, timestamp_utc, speed)
              VALUES (?, ?, ?, ?, ?, ?)`,
             [
                 req.routeName,
                 latitude,
                 longitude,
-                altitude || null,
-                timestamp_utc || new Date().toISOString().slice(0, 19).replace('T', ' '),
-                speed || null
+                altitude ?? null,
+                toMySQLDateTime(timestamp_utc),
+                speed ?? null
             ]
         );
 
@@ -376,6 +419,35 @@ app.get('/api/tracks/:route_name/latest', async (req, res) => {
     }
 });
 
+// Obtener lista de todas las rutas (para el mapa)
+app.get('/api/routes/all', async (req, res) => {
+    try {
+        const connection = await pool.getConnection();
+
+        // Obtener todas las rutas con info resumida, ordenadas por última actualización
+        const [routes] = await connection.execute(
+            `SELECT
+                route_name as name,
+                COUNT(*) as total_points,
+                MAX(timestamp_utc) as last_updated
+             FROM tracks
+             GROUP BY route_name
+             ORDER BY last_updated DESC`
+        );
+
+        connection.release();
+
+        res.json({
+            success: true,
+            total: routes.length,
+            routes: routes
+        });
+    } catch (error) {
+        console.error('❌ Error al obtener rutas:', error.message);
+        res.status(500).json({ error: 'Error al consultar la base de datos' });
+    }
+});
+
 // Endpoint de salud
 app.get('/api/health', async (req, res) => {
     try {
@@ -417,7 +489,8 @@ async function startServer() {
         console.log(`Interfaz: http://localhost:${PORT}`);
         console.log(`API GPS:  POST http://localhost:${PORT}/api/track`);
         console.log(`API GET:  GET  http://localhost:${PORT}/api/tracks/:route_name`);
-        console.log(`API Last: GET  http://localhost:${PORT}/api/tracks/:route_name/latest\n`);
+        console.log(`API Last: GET  http://localhost:${PORT}/api/tracks/:route_name/latest`);
+        console.log(`API List: GET  http://localhost:${PORT}/api/routes/all\n`);
         console.log('📖 Parámetros GET:');
         console.log('   ?format=geojson  - Formato GeoJSON para Leaflet\n');
         console.log('💻 Comandos:');

@@ -10,16 +10,21 @@
     "db:reset": "node scripts/init-db.js --reset"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "mysql2": "^3.6.5",
-    "jsonwebtoken": "^9.0.2",
+    "cors": "^2.8.6",
     "dotenv": "^16.3.1",
-    "express-rate-limit": "^7.1.5"
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
+    "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.6.5"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
   },
-  "keywords": ["gps", "api", "gpslogger"],
+  "keywords": [
+    "gps",
+    "api",
+    "gpslogger"
+  ],
   "author": "",
   "license": "MIT"
 }

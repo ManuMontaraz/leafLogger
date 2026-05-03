@@ -5,11 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GPS Logger API - Generador de Tokens</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin=""/>
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
 </head>
 <body>
     <div class="container">
         <h1>🛰️ GPS Logger API</h1>
-        
+
         <!-- SECCIÓN LOGIN -->
         <div id="loginSection" class="section">
             <h2>Acceso Administrador</h2>
@@ -27,13 +35,13 @@
             <div id="loginError" class="error hidden"></div>
         </div>
 
-        <!-- SECCIÓN GENERADOR DE TOKENS -->
+        <!-- SECCIÓN GENERADOR DE TOKENS Y MAPA -->
         <div id="generatorSection" class="section hidden">
             <div class="header">
                 <h2>Generador de Tokens JWT</h2>
                 <button id="logoutBtn" class="btn btn-secondary">Cerrar Sesión</button>
             </div>
-            
+
             <form id="tokenForm">
                 <div class="form-group">
                     <label for="routeName">Nombre de la Ruta:</label>
@@ -56,10 +64,44 @@
                 </div>
             </div>
 
+            <!-- SECCIÓN MAPA -->
+            <div id="mapSection" class="map-section">
+                <div class="map-header">
+                    <h3>🗺️ Visualizador de Rutas</h3>
+                    <div class="map-status">
+                        <span id="updateStatus">⏱️ Auto-refresh: 30s</span>
+                        <span id="lastUpdate">| Última: --:--:--</span>
+                        <span id="routesStats">| Rutas activas: 0</span>
+                    </div>
+                </div>
+
+                <div class="map-container">
+                    <!-- Sidebar con lista de rutas -->
+                    <div class="routes-sidebar">
+                        <div class="sidebar-header">
+                            <h4>📋 Rutas</h4>
+                            <div class="sidebar-actions">
+                                <button id="selectAllBtn" class="btn-small">Marcar 5</button>
+                                <button id="deselectAllBtn" class="btn-small">Desmarcar</button>
+                            </div>
+                        </div>
+                        <div id="routesList" class="routes-list">
+                            <div class="loading-routes">Cargando rutas...</div>
+                        </div>
+                        <div class="sidebar-footer">
+                            <span id="totalRoutes">Total: 0 rutas</span>
+                        </div>
+                    </div>
+
+                    <!-- Mapa -->
+                    <div id="map" class="map"></div>
+                </div>
+            </div>
+
             <!-- SECCIÓN DOCUMENTACIÓN API -->
             <div class="docs-section">
                 <h3>📖 Endpoints Disponibles</h3>
-                
+
                 <div class="endpoint">
                     <h4>POST /api/track</h4>
                     <p>Envía un punto GPS (requiere JWT)</p>
@@ -93,37 +135,39 @@
                 </div>
 
                 <div class="endpoint">
-                    <h4>🗺️ Ejemplo con Leaflet</h4>
-                    <pre><code>// Mostrar todos los puntos de una ruta
-fetch('/api/tracks/ruta-madrid?format=geojson')
-  .then(r => r.json())
-  .then(geojson => {
-    L.geoJSON(geojson).addTo(map);
-  });
-
-// Actualizar posición en tiempo real
-function updatePosition() {
-  fetch('/api/tracks/ruta-madrid/latest?format=geojson')
-    .then(r => r.json())
-    .then(point => {
-      marker.setLatLng([
-        point.geometry.coordinates[1],
-        point.geometry.coordinates[0]
-      ]);
-    });
-}
-
-setInterval(updatePosition, 5000); // Actualizar cada 5 segundos</code></pre>
+                    <h4>GET /api/routes/all</h4>
+                    <p>Obtiene todas las rutas disponibles</p>
+                    <ul>
+                        <li><strong>Respuesta:</strong> Lista de rutas con total de puntos y última actualización</li>
+                    </ul>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Variables globales
+        // ============================================
+        // VARIABLES GLOBALES
+        // ============================================
         let sessionToken = localStorage.getItem('gps_session');
+        let map = null;
+        let routeLayers = {}; // { routeName: { layer, marker, color, polyline, data } }
+        let allRoutes = []; // Lista completa de rutas
+        let updateInterval = null;
+        const UPDATE_TIME = 30000; // 30 segundos
+        const DEFAULT_VISIBLE = 5; // 5 rutas visibles por defecto
 
-        // Elementos del DOM
+        // Paleta de colores para rutas
+        const ROUTE_COLORS = [
+            '#e74c3c', '#3498db', '#f39c12', '#9b59b6', '#1abc9c',
+            '#e91e63', '#00bcd4', '#ff5722', '#3f51b5', '#4caf50',
+            '#ff9800', '#795548', '#607d8b', '#8bc34a', '#009688',
+            '#03a9f4', '#673ab7', '#ffeb3b', '#cddc39', '#795548'
+        ];
+
+        // ============================================
+        // ELEMENTOS DOM
+        // ============================================
         const loginSection = document.getElementById('loginSection');
         const generatorSection = document.getElementById('generatorSection');
         const loginForm = document.getElementById('loginForm');
@@ -132,14 +176,34 @@ setInterval(updatePosition, 5000); // Actualizar cada 5 segundos</code></pre>
         const tokenResult = document.getElementById('tokenResult');
         const logoutBtn = document.getElementById('logoutBtn');
         const copyBtn = document.getElementById('copyBtn');
+        const routesList = document.getElementById('routesList');
+        const selectAllBtn = document.getElementById('selectAllBtn');
+        const deselectAllBtn = document.getElementById('deselectAllBtn');
 
-        // Verificar si hay sesión guardada
+        // ============================================
+        // INICIALIZACIÓN
+        // ============================================
         if (sessionToken) {
             showGenerator();
+            initMap();
+            loadRoutes();
+            startAutoUpdate();
         }
 
-        // Login
-        loginForm.addEventListener('submit', async (e) => {
+        // ============================================
+        // EVENT LISTENERS
+        // ============================================
+        loginForm.addEventListener('submit', handleLogin);
+        tokenForm.addEventListener('submit', handleGenerateToken);
+        copyBtn.addEventListener('click', copyToken);
+        logoutBtn.addEventListener('click', logout);
+        selectAllBtn.addEventListener('click', () => selectFirstN(DEFAULT_VISIBLE));
+        deselectAllBtn.addEventListener('click', deselectAll);
+
+        // ============================================
+        // FUNCIONES DE AUTENTICACIÓN
+        // ============================================
+        async function handleLogin(e) {
             e.preventDefault();
             loginError.classList.add('hidden');
 
@@ -160,18 +224,20 @@ setInterval(updatePosition, 5000); // Actualizar cada 5 segundos</code></pre>
                     localStorage.setItem('gps_session', sessionToken);
                     showGenerator();
                     loginForm.reset();
+                    initMap();
+                    loadRoutes();
+                    startAutoUpdate();
                 } else {
                     showError(data.error || 'Error de autenticación');
                 }
             } catch (error) {
                 showError('Error de conexión con el servidor');
             }
-        });
+        }
 
-        // Generar Token
-        tokenForm.addEventListener('submit', async (e) => {
+        async function handleGenerateToken(e) {
             e.preventDefault();
-            
+
             const routeName = document.getElementById('routeName').value;
 
             try {
@@ -190,31 +256,36 @@ setInterval(updatePosition, 5000); // Actualizar cada 5 segundos</code></pre>
                 } else {
                     alert(data.error || 'Error al generar token');
                     if (response.status === 403) {
-                        // Sesión expirada
                         logout();
                     }
                 }
             } catch (error) {
                 alert('Error de conexión');
             }
-        });
+        }
 
-        // Copiar token
-        copyBtn.addEventListener('click', () => {
+        function copyToken() {
             const tokenDisplay = document.getElementById('tokenDisplay');
             tokenDisplay.select();
             document.execCommand('copy');
-            
+
             const originalText = copyBtn.textContent;
             copyBtn.textContent = '✅ Copiado!';
             setTimeout(() => {
                 copyBtn.textContent = originalText;
             }, 2000);
-        });
+        }
 
-        // Logout
-        logoutBtn.addEventListener('click', logout);
+        function logout() {
+            sessionToken = null;
+            localStorage.removeItem('gps_session');
+            stopAutoUpdate();
+            showLogin();
+        }
 
+        // ============================================
+        // FUNCIONES DE UI
+        // ============================================
         function showGenerator() {
             loginSection.classList.add('hidden');
             generatorSection.classList.remove('hidden');
@@ -231,10 +302,331 @@ setInterval(updatePosition, 5000); // Actualizar cada 5 segundos</code></pre>
             loginError.classList.remove('hidden');
         }
 
-        function logout() {
-            sessionToken = null;
-            localStorage.removeItem('gps_session');
-            showLogin();
+        // ============================================
+        // FUNCIONES DEL MAPA
+        // ============================================
+        function initMap() {
+            if (map) return;
+
+            map = L.map('map').setView([40.4168, -3.7038], 6);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+        }
+
+        function getRouteColor(index) {
+            return ROUTE_COLORS[index % ROUTE_COLORS.length];
+        }
+
+        // ============================================
+        // GESTIÓN DE RUTAS
+        // ============================================
+        async function loadRoutes() {
+            try {
+                const response = await fetch('/api/routes/all');
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    allRoutes = data.routes;
+                    renderRoutesList();
+                    document.getElementById('totalRoutes').textContent = `Total: ${allRoutes.length} rutas`;
+
+                    // Cargar las primeras 5 rutas por defecto
+                    selectFirstN(DEFAULT_VISIBLE);
+                } else {
+                    routesList.innerHTML = '<div class="error-routes">Error cargando rutas</div>';
+                }
+            } catch (error) {
+                console.error('Error cargando rutas:', error);
+                routesList.innerHTML = '<div class="error-routes">Error de conexión</div>';
+            }
+        }
+
+        function renderRoutesList() {
+            if (allRoutes.length === 0) {
+                routesList.innerHTML = '<div class="empty-routes">No hay rutas disponibles</div>';
+                return;
+            }
+
+            routesList.innerHTML = allRoutes.map((route, index) => {
+                const isDefault = index < DEFAULT_VISIBLE;
+                const color = getRouteColor(index);
+                const time = new Date(route.last_updated).toLocaleTimeString('es-ES', {
+                    hour: '2-digit', minute: '2-digit'
+                });
+
+                return `
+                    <div class="route-item ${isDefault ? 'checked' : ''}" data-route="${route.name}">
+                        <label class="route-checkbox-label">
+                            <input type="checkbox" class="route-checkbox"
+                                   data-route="${route.name}"
+                                   data-index="${index}"
+                                   ${isDefault ? 'checked' : ''}>
+                            <span class="route-color" style="background-color: ${color}"></span>
+                            <span class="route-name">${route.name}</span>
+                        </label>
+                        <div class="route-info">
+                            <span class="route-points">${route.total_points} pts</span>
+                            <span class="route-time">${time}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Añadir event listeners a los checkboxes
+            document.querySelectorAll('.route-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', handleRouteToggle);
+            });
+
+            // Click en el item para mostrar info
+            document.querySelectorAll('.route-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    if (!e.target.classList.contains('route-checkbox')) {
+                        const routeName = item.dataset.route;
+                        focusOnRoute(routeName);
+                    }
+                });
+            });
+        }
+
+        async function handleRouteToggle(e) {
+            const routeName = e.target.dataset.route;
+            const index = parseInt(e.target.dataset.index);
+            const isChecked = e.target.checked;
+
+            const routeItem = document.querySelector(`.route-item[data-route="${routeName}"]`);
+            routeItem.classList.toggle('checked', isChecked);
+
+            if (isChecked) {
+                await loadRouteData(routeName, index);
+            } else {
+                removeRouteFromMap(routeName);
+            }
+
+            updateStats();
+        }
+
+        async function loadRouteData(routeName, colorIndex) {
+            if (routeLayers[routeName]) {
+                // Si ya está cargada, solo mostrarla
+                showRouteOnMap(routeName);
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/tracks/${routeName}?format=geojson`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    const color = getRouteColor(colorIndex);
+                    addRouteToMap(routeName, data, color);
+                } else {
+                    console.error(`Error cargando ruta ${routeName}:`, data.error);
+                }
+            } catch (error) {
+                console.error(`Error cargando ruta ${routeName}:`, error);
+            }
+        }
+
+        function addRouteToMap(routeName, geojson, color) {
+            const features = geojson.features;
+            if (features.length === 0) return;
+
+            // Extraer coordenadas para la polyline
+            const latlngs = features.map(f => [f.geometry.coordinates[1], f.geometry.coordinates[0]]);
+
+            // Crear polyline conectando todos los puntos
+            const polyline = L.polyline(latlngs, {
+                color: color,
+                weight: 3,
+                opacity: 0.7
+            }).addTo(map);
+
+            // Crear marcador pulsante en el último punto
+            const lastPoint = features[features.length - 1];
+            const lastCoords = [lastPoint.geometry.coordinates[1], lastPoint.geometry.coordinates[0]];
+            const props = lastPoint.properties;
+
+            const marker = L.circleMarker(lastCoords, {
+                radius: 8,
+                fillColor: color,
+                color: '#fff',
+                weight: 2,
+                opacity: 1,
+                fillOpacity: 0.9
+            }).addTo(map);
+
+            // Popup con información
+            marker.bindPopup(`
+                <div class="route-popup">
+                    <h4>${routeName}</h4>
+                    <p><strong>Velocidad:</strong> ${props.speed || 'N/A'} km/h</p>
+                    <p><strong>Altitud:</strong> ${props.altitude || 'N/A'} m</p>
+                    <p><strong>Fecha:</strong> ${new Date(props.timestamp).toLocaleString('es-ES')}</p>
+                    <p><strong>Total puntos:</strong> ${features.length}</p>
+                </div>
+            `);
+
+            // Guardar referencias
+            routeLayers[routeName] = {
+                polyline: polyline,
+                marker: marker,
+                color: color,
+                data: geojson,
+                lastPoint: lastPoint,
+                lastId: lastPoint.properties.id, // Guardar ID para comparar en updates
+                visible: true
+            };
+
+            // Ajustar vista si es la primera ruta
+            if (Object.keys(routeLayers).length === 1) {
+                map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
+            }
+        }
+
+        function removeRouteFromMap(routeName) {
+            const route = routeLayers[routeName];
+            if (route) {
+                map.removeLayer(route.polyline);
+                map.removeLayer(route.marker);
+                route.visible = false;
+            }
+            updateStats();
+        }
+
+        function showRouteOnMap(routeName) {
+            const route = routeLayers[routeName];
+            if (route && !route.visible) {
+                route.polyline.addTo(map);
+                route.marker.addTo(map);
+                route.visible = true;
+            }
+        }
+
+        function focusOnRoute(routeName) {
+            const route = routeLayers[routeName];
+            if (route && route.visible) {
+                map.fitBounds(route.polyline.getBounds(), { padding: [50, 50] });
+                route.marker.openPopup();
+            }
+        }
+
+        // ============================================
+        // SELECCIÓN MASIVA
+        // ============================================
+        async function selectFirstN(n) {
+            const checkboxes = document.querySelectorAll('.route-checkbox');
+
+            // Desmarcar todas primero
+            checkboxes.forEach((cb, index) => {
+                cb.checked = index < n;
+                cb.dispatchEvent(new Event('change'));
+            });
+        }
+
+        function deselectAll() {
+            const checkboxes = document.querySelectorAll('.route-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = false;
+                cb.dispatchEvent(new Event('change'));
+            });
+        }
+
+        // ============================================
+        // AUTO-ACTUALIZACIÓN
+        // ============================================
+        function startAutoUpdate() {
+            updateInterval = setInterval(updateVisibleRoutes, UPDATE_TIME);
+            updateStatus('⏱️ Auto-refresh: 30s');
+        }
+
+        function stopAutoUpdate() {
+            if (updateInterval) {
+                clearInterval(updateInterval);
+                updateInterval = null;
+            }
+        }
+
+        async function updateVisibleRoutes() {
+            const visibleRoutes = Object.entries(routeLayers)
+                .filter(([_, route]) => route.visible)
+                .map(([name, _]) => name);
+
+            if (visibleRoutes.length === 0) return;
+
+            updateStatus('🔄 Actualizando...');
+
+            try {
+                await Promise.all(visibleRoutes.map(async (routeName) => {
+                    const response = await fetch(`/api/tracks/${routeName}/latest?format=geojson`);
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        updateRouteMarker(routeName, data);
+                    }
+                }));
+
+                updateLastUpdateTime();
+                updateStatus('⏱️ Auto-refresh: 30s');
+            } catch (error) {
+                console.error('Error en auto-actualización:', error);
+                updateStatus('❌ Error de actualización');
+            }
+        }
+
+        function updateRouteMarker(routeName, pointData) {
+            const route = routeLayers[routeName];
+            if (!route || !route.visible) return;
+
+            const newId = pointData.properties.id;
+
+            // Verificar si es un punto nuevo comparando IDs
+            if (newId === route.lastId) {
+                // Es el mismo punto, no hacer nada
+                return;
+            }
+
+            const coords = [pointData.geometry.coordinates[1], pointData.geometry.coordinates[0]];
+            const props = pointData.properties;
+
+            // Mover marcador a la nueva posición
+            route.marker.setLatLng(coords);
+
+            // Extender polyline con el nuevo punto
+            const currentLatLngs = route.polyline.getLatLngs();
+            currentLatLngs.push(coords);
+            route.polyline.setLatLngs(currentLatLngs);
+
+            // Actualizar popup
+            route.marker.setPopupContent(`
+                <div class="route-popup">
+                    <h4>${routeName}</h4>
+                    <p><strong>Velocidad:</strong> ${props.speed || 'N/A'} km/h</p>
+                    <p><strong>Altitud:</strong> ${props.altitude || 'N/A'} m</p>
+                    <p><strong>Fecha:</strong> ${new Date(props.timestamp).toLocaleString('es-ES')}</p>
+                    <p><strong>Total puntos:</strong> ${currentLatLngs.length}</p>
+                </div>
+            `);
+
+            // Actualizar referencias del último punto
+            route.lastPoint = pointData;
+            route.lastId = newId;
+        }
+
+        function updateStats() {
+            const visibleCount = Object.values(routeLayers).filter(r => r.visible).length;
+            document.getElementById('routesStats').textContent = `| Rutas activas: ${visibleCount}`;
+        }
+
+        function updateStatus(text) {
+            document.getElementById('updateStatus').textContent = text;
+        }
+
+        function updateLastUpdateTime() {
+            const now = new Date();
+            const time = now.toLocaleTimeString('es-ES');
+            document.getElementById('lastUpdate').textContent = `| Última: ${time}`;
         }
     </script>
 </body>

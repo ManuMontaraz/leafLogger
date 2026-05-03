@@ -1,0 +1,154 @@
+2026-04-03 18:58:20 +02:00: 🔌 Verificando conexión a MySQL...
+2026-04-03 18:58:20 +02:00: ✅ Conexión a base de datos establecida
+2026-04-03 18:58:20 +02:00: 
+2026-04-03 18:58:20 +02:00: ========================================
+2026-04-03 18:58:20 +02:00:   🚀 GPS Logger API
+2026-04-03 18:58:20 +02:00: ========================================
+2026-04-03 18:58:20 +02:00: 
+2026-04-03 18:58:20 +02:00: Servidor: http://localhost:3005
+2026-04-03 18:58:20 +02:00: Interfaz: http://localhost:3005
+2026-04-03 18:58:20 +02:00: API GPS:  POST http://localhost:3005/api/track
+2026-04-03 18:58:20 +02:00: API GET:  GET  http://localhost:3005/api/tracks/:route_name
+2026-04-03 18:58:20 +02:00: API Last: GET  http://localhost:3005/api/tracks/:route_name/latest
+2026-04-03 18:58:20 +02:00: 
+2026-04-03 18:58:20 +02:00: 📖 Parámetros GET:
+2026-04-03 18:58:20 +02:00:    ?format=geojson  - Formato GeoJSON para Leaflet
+2026-04-03 18:58:20 +02:00: 
+2026-04-03 18:58:20 +02:00: 💻 Comandos:
+2026-04-03 18:58:20 +02:00:    npm run db:build  - Crear base de datos
+2026-04-03 18:58:20 +02:00:    npm start         - Iniciar servidor
+2026-04-03 18:58:20 +02:00:    npm run dev       - Desarrollo con recarga
+2026-04-03 18:58:20 +02:00: 
+2026-04-03 23:39:18 +02:00: 🔌 Verificando conexión a MySQL...
+2026-04-03 23:39:18 +02:00: ✅ Conexión a base de datos establecida
+2026-04-03 23:39:18 +02:00: 
+2026-04-03 23:39:18 +02:00: ========================================
+2026-04-03 23:39:18 +02:00:   🚀 GPS Logger API
+2026-04-03 23:39:18 +02:00: ========================================
+2026-04-03 23:39:18 +02:00: 
+2026-04-03 23:39:18 +02:00: Servidor: http://localhost:3005
+2026-04-03 23:39:18 +02:00: Interfaz: http://localhost:3005
+2026-04-03 23:39:18 +02:00: API GPS:  POST http://localhost:3005/api/track
+2026-04-03 23:39:18 +02:00: API GET:  GET  http://localhost:3005/api/tracks/:route_name
+2026-04-03 23:39:18 +02:00: API Last: GET  http://localhost:3005/api/tracks/:route_name/latest
+2026-04-03 23:39:18 +02:00: 
+2026-04-03 23:39:18 +02:00: 📖 Parámetros GET:
+2026-04-03 23:39:18 +02:00:    ?format=geojson  - Formato GeoJSON para Leaflet
+2026-04-03 23:39:18 +02:00: 
+2026-04-03 23:39:18 +02:00: 💻 Comandos:
+2026-04-03 23:39:18 +02:00:    npm run db:build  - Crear base de datos
+2026-04-03 23:39:18 +02:00:    npm start         - Iniciar servidor
+2026-04-03 23:39:18 +02:00:    npm run dev       - Desarrollo con recarga
+2026-04-03 23:39:18 +02:00: 
+2026-04-04 00:05:09 +02:00: 🔌 Verificando conexión a MySQL...
+2026-04-04 00:05:09 +02:00: ✅ Conexión a base de datos establecida
+2026-04-04 00:05:09 +02:00: 
+2026-04-04 00:05:09 +02:00: ========================================
+2026-04-04 00:05:09 +02:00:   🚀 GPS Logger API
+2026-04-04 00:05:09 +02:00: ========================================
+2026-04-04 00:05:09 +02:00: 
+2026-04-04 00:05:09 +02:00: Servidor: http://localhost:3005
+2026-04-04 00:05:09 +02:00: Interfaz: http://localhost:3005
+2026-04-04 00:05:09 +02:00: API GPS:  POST http://localhost:3005/api/track
+2026-04-04 00:05:09 +02:00: API GET:  GET  http://localhost:3005/api/tracks/:route_name
+2026-04-04 00:05:09 +02:00: API Last: GET  http://localhost:3005/api/tracks/:route_name/latest
+2026-04-04 00:05:09 +02:00: API List: GET  http://localhost:3005/api/routes/all
+2026-04-04 00:05:09 +02:00: 
+2026-04-04 00:05:09 +02:00: 📖 Parámetros GET:
+2026-04-04 00:05:09 +02:00:    ?format=geojson  - Formato GeoJSON para Leaflet
+2026-04-04 00:05:09 +02:00: 
+2026-04-04 00:05:09 +02:00: 💻 Comandos:
+2026-04-04 00:05:09 +02:00:    npm run db:build  - Crear base de datos
+2026-04-04 00:05:09 +02:00:    npm start         - Iniciar servidor
+2026-04-04 00:05:09 +02:00:    npm run dev       - Desarrollo con recarga
+2026-04-04 00:05:09 +02:00: 
+2026-04-04 00:15:41 +02:00: 🔌 Verificando conexión a MySQL...
+2026-04-04 00:15:41 +02:00: ✅ Conexión a base de datos establecida
+2026-04-04 00:15:41 +02:00: 
+2026-04-04 00:15:41 +02:00: ========================================
+2026-04-04 00:15:41 +02:00:   🚀 GPS Logger API
+2026-04-04 00:15:41 +02:00: ========================================
+2026-04-04 00:15:41 +02:00: 
+2026-04-04 00:15:41 +02:00: Servidor: http://localhost:3005
+2026-04-04 00:15:41 +02:00: Interfaz: http://localhost:3005
+2026-04-04 00:15:41 +02:00: API GPS:  POST http://localhost:3005/api/track
+2026-04-04 00:15:41 +02:00: API GET:  GET  http://localhost:3005/api/tracks/:route_name
+2026-04-04 00:15:41 +02:00: API Last: GET  http://localhost:3005/api/tracks/:route_name/latest
+2026-04-04 00:15:41 +02:00: API List: GET  http://localhost:3005/api/routes/all
+2026-04-04 00:15:41 +02:00: 
+2026-04-04 00:15:41 +02:00: 📖 Parámetros GET:
+2026-04-04 00:15:41 +02:00:    ?format=geojson  - Formato GeoJSON para Leaflet
+2026-04-04 00:15:41 +02:00: 
+2026-04-04 00:15:41 +02:00: 💻 Comandos:
+2026-04-04 00:15:41 +02:00:    npm run db:build  - Crear base de datos
+2026-04-04 00:15:41 +02:00:    npm start         - Iniciar servidor
+2026-04-04 00:15:41 +02:00:    npm run dev       - Desarrollo con recarga
+2026-04-04 00:15:41 +02:00: 
+2026-04-04 00:24:01 +02:00: 🔌 Verificando conexión a MySQL...
+2026-04-04 00:24:01 +02:00: ✅ Conexión a base de datos establecida
+2026-04-04 00:24:01 +02:00: 
+2026-04-04 00:24:01 +02:00: ========================================
+2026-04-04 00:24:01 +02:00:   🚀 GPS Logger API
+2026-04-04 00:24:01 +02:00: ========================================
+2026-04-04 00:24:01 +02:00: 
+2026-04-04 00:24:01 +02:00: Servidor: http://localhost:3005
+2026-04-04 00:24:01 +02:00: Interfaz: http://localhost:3005
+2026-04-04 00:24:01 +02:00: API GPS:  POST http://localhost:3005/api/track
+2026-04-04 00:24:01 +02:00: API GET:  GET  http://localhost:3005/api/tracks/:route_name
+2026-04-04 00:24:01 +02:00: API Last: GET  http://localhost:3005/api/tracks/:route_name/latest
+2026-04-04 00:24:01 +02:00: API List: GET  http://localhost:3005/api/routes/all
+2026-04-04 00:24:01 +02:00: 
+2026-04-04 00:24:01 +02:00: 📖 Parámetros GET:
+2026-04-04 00:24:01 +02:00:    ?format=geojson  - Formato GeoJSON para Leaflet
+2026-04-04 00:24:01 +02:00: 
+2026-04-04 00:24:01 +02:00: 💻 Comandos:
+2026-04-04 00:24:01 +02:00:    npm run db:build  - Crear base de datos
+2026-04-04 00:24:01 +02:00:    npm start         - Iniciar servidor
+2026-04-04 00:24:01 +02:00:    npm run dev       - Desarrollo con recarga
+2026-04-04 00:24:01 +02:00: 
+2026-04-04 00:45:43 +02:00: 🌐 CORS habilitado para: *
+2026-04-04 00:45:43 +02:00: 🔌 Verificando conexión a MySQL...
+2026-04-04 00:45:43 +02:00: ✅ Conexión a base de datos establecida
+2026-04-04 00:45:43 +02:00: 
+2026-04-04 00:45:43 +02:00: ========================================
+2026-04-04 00:45:43 +02:00:   🚀 GPS Logger API
+2026-04-04 00:45:43 +02:00: ========================================
+2026-04-04 00:45:43 +02:00: 
+2026-04-04 00:45:43 +02:00: Servidor: http://localhost:3005
+2026-04-04 00:45:43 +02:00: Interfaz: http://localhost:3005
+2026-04-04 00:45:43 +02:00: API GPS:  POST http://localhost:3005/api/track
+2026-04-04 00:45:43 +02:00: API GET:  GET  http://localhost:3005/api/tracks/:route_name
+2026-04-04 00:45:43 +02:00: API Last: GET  http://localhost:3005/api/tracks/:route_name/latest
+2026-04-04 00:45:43 +02:00: API List: GET  http://localhost:3005/api/routes/all
+2026-04-04 00:45:43 +02:00: 
+2026-04-04 00:45:43 +02:00: 📖 Parámetros GET:
+2026-04-04 00:45:43 +02:00:    ?format=geojson  - Formato GeoJSON para Leaflet
+2026-04-04 00:45:43 +02:00: 
+2026-04-04 00:45:43 +02:00: 💻 Comandos:
+2026-04-04 00:45:43 +02:00:    npm run db:build  - Crear base de datos
+2026-04-04 00:45:43 +02:00:    npm start         - Iniciar servidor
+2026-04-04 00:45:43 +02:00:    npm run dev       - Desarrollo con recarga
+2026-04-04 00:45:43 +02:00: 
+2026-04-04 00:46:53 +02:00: 🌐 CORS habilitado para: https://manumontaraz.es
+2026-04-04 00:46:53 +02:00: 🔌 Verificando conexión a MySQL...
+2026-04-04 00:46:53 +02:00: ✅ Conexión a base de datos establecida
+2026-04-04 00:46:53 +02:00: 
+2026-04-04 00:46:53 +02:00: ========================================
+2026-04-04 00:46:53 +02:00:   🚀 GPS Logger API
+2026-04-04 00:46:53 +02:00: ========================================
+2026-04-04 00:46:53 +02:00: 
+2026-04-04 00:46:53 +02:00: Servidor: http://localhost:3005
+2026-04-04 00:46:53 +02:00: Interfaz: http://localhost:3005
+2026-04-04 00:46:53 +02:00: API GPS:  POST http://localhost:3005/api/track
+2026-04-04 00:46:53 +02:00: API GET:  GET  http://localhost:3005/api/tracks/:route_name
+2026-04-04 00:46:53 +02:00: API Last: GET  http://localhost:3005/api/tracks/:route_name/latest
+2026-04-04 00:46:53 +02:00: API List: GET  http://localhost:3005/api/routes/all
+2026-04-04 00:46:53 +02:00: 
+2026-04-04 00:46:53 +02:00: 📖 Parámetros GET:
+2026-04-04 00:46:53 +02:00:    ?format=geojson  - Formato GeoJSON para Leaflet
+2026-04-04 00:46:53 +02:00: 
+2026-04-04 00:46:53 +02:00: 💻 Comandos:
+2026-04-04 00:46:53 +02:00:    npm run db:build  - Crear base de datos
+2026-04-04 00:46:53 +02:00:    npm start         - Iniciar servidor
+2026-04-04 00:46:53 +02:00:    npm run dev       - Desarrollo con recarga
+2026-04-04 00:46:53 +02:00: 
