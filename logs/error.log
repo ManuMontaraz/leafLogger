@@ -123,3 +123,48 @@
 2026-04-04 14:35:48 +02:00:   code: 'ERR_ERL_UNEXPECTED_X_FORWARDED_FOR',
 2026-04-04 14:35:48 +02:00:   help: 'https://express-rate-limit.github.io/ERR_ERL_UNEXPECTED_X_FORWARDED_FOR/'
 2026-04-04 14:35:48 +02:00: }
+2026-05-08 04:56:09 +02:00: ValidationError: The 'X-Forwarded-For' header is set but the Express 'trust proxy' setting is false (default). This could indicate a misconfiguration which would prevent express-rate-limit from accurately identifying users. See https://express-rate-limit.github.io/ERR_ERL_UNEXPECTED_X_FORWARDED_FOR/ for more information.
+2026-05-08 04:56:09 +02:00:     at Object.xForwardedForHeader (/var/dev/leafLogger/node_modules/express-rate-limit/dist/index.cjs:185:13)
+2026-05-08 04:56:09 +02:00:     at wrappedValidations.<computed> [as xForwardedForHeader] (/var/dev/leafLogger/node_modules/express-rate-limit/dist/index.cjs:397:22)
+2026-05-08 04:56:09 +02:00:     at Object.keyGenerator (/var/dev/leafLogger/node_modules/express-rate-limit/dist/index.cjs:658:20)
+2026-05-08 04:56:09 +02:00:     at /var/dev/leafLogger/node_modules/express-rate-limit/dist/index.cjs:710:32
+2026-05-08 04:56:09 +02:00:     at async /var/dev/leafLogger/node_modules/express-rate-limit/dist/index.cjs:691:5 {
+2026-05-08 04:56:09 +02:00:   code: 'ERR_ERL_UNEXPECTED_X_FORWARDED_FOR',
+2026-05-08 04:56:09 +02:00:   help: 'https://express-rate-limit.github.io/ERR_ERL_UNEXPECTED_X_FORWARDED_FOR/'
+2026-05-08 04:56:09 +02:00: }
+2026-05-18 23:30:29 +02:00: ValidationError: The 'X-Forwarded-For' header is set but the Express 'trust proxy' setting is false (default). This could indicate a misconfiguration which would prevent express-rate-limit from accurately identifying users. See https://express-rate-limit.github.io/ERR_ERL_UNEXPECTED_X_FORWARDED_FOR/ for more information.
+2026-05-18 23:30:29 +02:00:     at Object.xForwardedForHeader (/var/dev/leafLogger/node_modules/express-rate-limit/dist/index.cjs:185:13)
+2026-05-18 23:30:29 +02:00:     at wrappedValidations.<computed> [as xForwardedForHeader] (/var/dev/leafLogger/node_modules/express-rate-limit/dist/index.cjs:397:22)
+2026-05-18 23:30:29 +02:00:     at Object.keyGenerator (/var/dev/leafLogger/node_modules/express-rate-limit/dist/index.cjs:658:20)
+2026-05-18 23:30:29 +02:00:     at /var/dev/leafLogger/node_modules/express-rate-limit/dist/index.cjs:710:32
+2026-05-18 23:30:29 +02:00:     at async /var/dev/leafLogger/node_modules/express-rate-limit/dist/index.cjs:691:5 {
+2026-05-18 23:30:29 +02:00:   code: 'ERR_ERL_UNEXPECTED_X_FORWARDED_FOR',
+2026-05-18 23:30:29 +02:00:   help: 'https://express-rate-limit.github.io/ERR_ERL_UNEXPECTED_X_FORWARDED_FOR/'
+2026-05-18 23:30:29 +02:00: }
+2026-06-03 07:08:03 +02:00: ValidationError: The 'X-Forwarded-For' header is set but the Express 'trust proxy' setting is false (default). This could indicate a misconfiguration which would prevent express-rate-limit from accurately identifying users. See https://express-rate-limit.github.io/ERR_ERL_UNEXPECTED_X_FORWARDED_FOR/ for more information.
+2026-06-03 07:08:03 +02:00:     at Object.xForwardedForHeader (/var/dev/leafLogger/node_modules/express-rate-limit/dist/index.cjs:185:13)
+2026-06-03 07:08:03 +02:00:     at wrappedValidations.<computed> [as xForwardedForHeader] (/var/dev/leafLogger/node_modules/express-rate-limit/dist/index.cjs:397:22)
+2026-06-03 07:08:03 +02:00:     at Object.keyGenerator (/var/dev/leafLogger/node_modules/express-rate-limit/dist/index.cjs:658:20)
+2026-06-03 07:08:03 +02:00:     at /var/dev/leafLogger/node_modules/express-rate-limit/dist/index.cjs:710:32
+2026-06-03 07:08:03 +02:00:     at async /var/dev/leafLogger/node_modules/express-rate-limit/dist/index.cjs:691:5 {
+2026-06-03 07:08:03 +02:00:   code: 'ERR_ERL_UNEXPECTED_X_FORWARDED_FOR',
+2026-06-03 07:08:03 +02:00:   help: 'https://express-rate-limit.github.io/ERR_ERL_UNEXPECTED_X_FORWARDED_FOR/'
+2026-06-03 07:08:03 +02:00: }
+2026-06-30 06:36:40 +02:00: ValidationError: The 'X-Forwarded-For' header is set but the Express 'trust proxy' setting is false (default). This could indicate a misconfiguration which would prevent express-rate-limit from accurately identifying users. See https://express-rate-limit.github.io/ERR_ERL_UNEXPECTED_X_FORWARDED_FOR/ for more information.
+2026-06-30 06:36:40 +02:00:     at Object.xForwardedForHeader (/var/dev/leafLogger/node_modules/express-rate-limit/dist/index.cjs:185:13)
+2026-06-30 06:36:40 +02:00:     at wrappedValidations.<computed> [as xForwardedForHeader] (/var/dev/leafLogger/node_modules/express-rate-limit/dist/index.cjs:397:22)
+2026-06-30 06:36:40 +02:00:     at Object.keyGenerator (/var/dev/leafLogger/node_modules/express-rate-limit/dist/index.cjs:658:20)
+2026-06-30 06:36:40 +02:00:     at /var/dev/leafLogger/node_modules/express-rate-limit/dist/index.cjs:710:32
+2026-06-30 06:36:40 +02:00:     at async /var/dev/leafLogger/node_modules/express-rate-limit/dist/index.cjs:691:5 {
+2026-06-30 06:36:40 +02:00:   code: 'ERR_ERL_UNEXPECTED_X_FORWARDED_FOR',
+2026-06-30 06:36:40 +02:00:   help: 'https://express-rate-limit.github.io/ERR_ERL_UNEXPECTED_X_FORWARDED_FOR/'
+2026-06-30 06:36:40 +02:00: }
+2026-07-03 22:21:16 +02:00: ValidationError: The 'X-Forwarded-For' header is set but the Express 'trust proxy' setting is false (default). This could indicate a misconfiguration which would prevent express-rate-limit from accurately identifying users. See https://express-rate-limit.github.io/ERR_ERL_UNEXPECTED_X_FORWARDED_FOR/ for more information.
+2026-07-03 22:21:16 +02:00:     at Object.xForwardedForHeader (/var/dev/leafLogger/node_modules/express-rate-limit/dist/index.cjs:185:13)
+2026-07-03 22:21:16 +02:00:     at wrappedValidations.<computed> [as xForwardedForHeader] (/var/dev/leafLogger/node_modules/express-rate-limit/dist/index.cjs:397:22)
+2026-07-03 22:21:16 +02:00:     at Object.keyGenerator (/var/dev/leafLogger/node_modules/express-rate-limit/dist/index.cjs:658:20)
+2026-07-03 22:21:16 +02:00:     at /var/dev/leafLogger/node_modules/express-rate-limit/dist/index.cjs:710:32
+2026-07-03 22:21:16 +02:00:     at async /var/dev/leafLogger/node_modules/express-rate-limit/dist/index.cjs:691:5 {
+2026-07-03 22:21:16 +02:00:   code: 'ERR_ERL_UNEXPECTED_X_FORWARDED_FOR',
+2026-07-03 22:21:16 +02:00:   help: 'https://express-rate-limit.github.io/ERR_ERL_UNEXPECTED_X_FORWARDED_FOR/'
+2026-07-03 22:21:16 +02:00: }
