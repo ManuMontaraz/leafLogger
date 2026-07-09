@@ -368,6 +368,9 @@
                         </label>
                         <div class="route-info">
                             <span class="route-points">${route.total_points} pts</span>
+                            <div class="route-actions">
+                                <button class="btn-danger route-delete-btn" data-route="${route.name}">Borrar</button>
+                            </div>
                             <span class="route-time">${time}</span>
                         </div>
                     </div>
@@ -382,10 +385,20 @@
             // Click en el item para mostrar info
             document.querySelectorAll('.route-item').forEach(item => {
                 item.addEventListener('click', (e) => {
-                    if (!e.target.classList.contains('route-checkbox')) {
+                    if (!e.target.classList.contains('route-checkbox') &&
+                        !e.target.classList.contains('route-delete-btn')) {
                         const routeName = item.dataset.route;
                         focusOnRoute(routeName);
                     }
+                });
+            });
+
+            // Botones de borrar ruta
+            document.querySelectorAll('.route-delete-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const routeName = btn.dataset.route;
+                    deleteRoute(routeName);
                 });
             });
         }
@@ -407,11 +420,16 @@
             updateStats();
         }
 
-        async function loadRouteData(routeName, colorIndex) {
-            if (routeLayers[routeName]) {
+        async function loadRouteData(routeName, colorIndex, force = false) {
+            if (routeLayers[routeName] && !force) {
                 // Si ya está cargada, solo mostrarla
                 showRouteOnMap(routeName);
                 return;
+            }
+
+            if (routeLayers[routeName]) {
+                removeRouteFromMap(routeName);
+                delete routeLayers[routeName];
             }
 
             try {
@@ -443,39 +461,40 @@
                 opacity: 0.7
             }).addTo(map);
 
-            // Crear marcador pulsante en el último punto
+            // Crear un marcador por cada punto
+            const markers = [];
+            features.forEach((feature, index) => {
+                const isLast = index === features.length - 1;
+                const coords = [feature.geometry.coordinates[1], feature.geometry.coordinates[0]];
+
+                const marker = L.circleMarker(coords, {
+                    radius: isLast ? 8 : 5,
+                    fillColor: color,
+                    color: '#fff',
+                    weight: isLast ? 2 : 1,
+                    opacity: 1,
+                    fillOpacity: isLast ? 0.9 : 0.7
+                }).addTo(map);
+
+                marker.bindPopup(createPointViewPopup(routeName, feature, isLast));
+
+                marker.on('popupopen', () => {
+                    attachPopupListeners(marker, routeName, feature, isLast);
+                });
+
+                markers.push(marker);
+            });
+
             const lastPoint = features[features.length - 1];
-            const lastCoords = [lastPoint.geometry.coordinates[1], lastPoint.geometry.coordinates[0]];
-            const props = lastPoint.properties;
-
-            const marker = L.circleMarker(lastCoords, {
-                radius: 8,
-                fillColor: color,
-                color: '#fff',
-                weight: 2,
-                opacity: 1,
-                fillOpacity: 0.9
-            }).addTo(map);
-
-            // Popup con información
-            marker.bindPopup(`
-                <div class="route-popup">
-                    <h4>${routeName}</h4>
-                    <p><strong>Velocidad:</strong> ${props.speed || 'N/A'} km/h</p>
-                    <p><strong>Altitud:</strong> ${props.altitude || 'N/A'} m</p>
-                    <p><strong>Fecha:</strong> ${new Date(props.timestamp).toLocaleString('es-ES')}</p>
-                    <p><strong>Total puntos:</strong> ${features.length}</p>
-                </div>
-            `);
 
             // Guardar referencias
             routeLayers[routeName] = {
                 polyline: polyline,
-                marker: marker,
+                markers: markers,
                 color: color,
                 data: geojson,
                 lastPoint: lastPoint,
-                lastId: lastPoint.properties.id, // Guardar ID para comparar en updates
+                lastId: lastPoint.properties.id,
                 visible: true
             };
 
@@ -489,7 +508,11 @@
             const route = routeLayers[routeName];
             if (route) {
                 map.removeLayer(route.polyline);
-                map.removeLayer(route.marker);
+                if (route.markers) {
+                    route.markers.forEach(marker => map.removeLayer(marker));
+                } else if (route.marker) {
+                    map.removeLayer(route.marker);
+                }
                 route.visible = false;
             }
             updateStats();
@@ -499,17 +522,209 @@
             const route = routeLayers[routeName];
             if (route && !route.visible) {
                 route.polyline.addTo(map);
-                route.marker.addTo(map);
+                if (route.markers) {
+                    route.markers.forEach(marker => marker.addTo(map));
+                } else if (route.marker) {
+                    route.marker.addTo(map);
+                }
                 route.visible = true;
             }
         }
 
         function focusOnRoute(routeName) {
             const route = routeLayers[routeName];
-            if (route && route.visible) {
+            if (route && route.visible && route.markers && route.markers.length > 0) {
                 map.fitBounds(route.polyline.getBounds(), { padding: [50, 50] });
-                route.marker.openPopup();
+                route.markers[route.markers.length - 1].openPopup();
             }
+        }
+
+        // ============================================
+        // POPUPS EDITABLES DE PUNTOS
+        // ============================================
+        function createPointViewPopup(routeName, feature, isLast) {
+            const props = feature.properties;
+            const [lon, lat] = feature.geometry.coordinates;
+            return `
+                <div class="point-popup">
+                    <h4>${isLast ? '📍 Posición actual' : 'Punto ' + props.id}</h4>
+                    <p><strong>Ruta:</strong> ${routeName}</p>
+                    <p><strong>Lat:</strong> ${lat.toFixed(6)}</p>
+                    <p><strong>Lon:</strong> ${lon.toFixed(6)}</p>
+                    <p><strong>Altitud:</strong> ${props.altitude !== null && props.altitude !== undefined ? props.altitude + ' m' : 'N/A'}</p>
+                    <p><strong>Velocidad:</strong> ${props.speed !== null && props.speed !== undefined ? props.speed + ' km/h' : 'N/A'}</p>
+                    <p><strong>Fecha:</strong> ${new Date(props.timestamp).toLocaleString('es-ES')}</p>
+                    <div class="popup-actions">
+                        <button class="btn-small btn-edit" data-point-id="${props.id}">Editar</button>
+                        <button class="btn-danger btn-delete-point" data-point-id="${props.id}">Borrar</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function createPointEditPopup(routeName, feature) {
+            const props = feature.properties;
+            const [lon, lat] = feature.geometry.coordinates;
+            return `
+                <form class="edit-form" data-point-id="${props.id}">
+                    <h4>Editar punto ${props.id}</h4>
+                    <label>Latitud <input type="number" step="any" name="latitude" value="${lat}" required></label>
+                    <label>Longitud <input type="number" step="any" name="longitude" value="${lon}" required></label>
+                    <label>Altitud <input type="number" step="any" name="altitude" value="${props.altitude !== null && props.altitude !== undefined ? props.altitude : ''}"></label>
+                    <label>Velocidad <input type="number" step="any" name="speed" value="${props.speed !== null && props.speed !== undefined ? props.speed : ''}"></label>
+                    <label>Fecha <input type="text" name="timestamp_utc" value="${props.timestamp}"></label>
+                    <div class="popup-actions">
+                        <button type="submit" class="btn-success btn-save">Guardar</button>
+                        <button type="button" class="btn-secondary btn-cancel">Cancelar</button>
+                    </div>
+                </form>
+            `;
+        }
+
+        function attachPopupListeners(marker, routeName, feature, isLast) {
+            const container = marker.getPopup().getElement();
+            if (!container) return;
+
+            const editBtn = container.querySelector('.btn-edit');
+            const deleteBtn = container.querySelector('.btn-delete-point');
+
+            if (editBtn) {
+                editBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    marker.setPopupContent(createPointEditPopup(routeName, feature));
+                    attachEditListeners(marker, routeName, feature, isLast);
+                });
+            }
+
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const id = parseInt(deleteBtn.dataset.pointId, 10);
+                    deletePoint(id, routeName);
+                });
+            }
+        }
+
+        function attachEditListeners(marker, routeName, feature, isLast) {
+            const container = marker.getPopup().getElement();
+            if (!container) return;
+
+            const form = container.querySelector('.edit-form');
+            const cancelBtn = container.querySelector('.btn-cancel');
+
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    marker.setPopupContent(createPointViewPopup(routeName, feature, isLast));
+                    attachPopupListeners(marker, routeName, feature, isLast);
+                });
+            }
+
+            if (form) {
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const id = parseInt(form.dataset.pointId, 10);
+                    const formData = new FormData(form);
+                    const body = {};
+
+                    const latitude = parseFloat(formData.get('latitude'));
+                    const longitude = parseFloat(formData.get('longitude'));
+                    if (!isNaN(latitude)) body.latitude = latitude;
+                    if (!isNaN(longitude)) body.longitude = longitude;
+
+                    const altitude = formData.get('altitude');
+                    if (altitude !== '') body.altitude = parseFloat(altitude);
+
+                    const speed = formData.get('speed');
+                    if (speed !== '') body.speed = parseFloat(speed);
+
+                    const timestamp = formData.get('timestamp_utc');
+                    if (timestamp !== '') body.timestamp_utc = timestamp;
+
+                    await savePointEdit(id, routeName, body);
+                });
+            }
+        }
+
+        // ============================================
+        // OPERACIONES DE ADMIN
+        // ============================================
+        async function deletePoint(id, routeName) {
+            if (!confirm(`¿Borrar el punto ${id}?`)) return;
+
+            try {
+                const response = await fetch(`/api/tracks/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${sessionToken}` }
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    await reloadRoute(routeName);
+                } else {
+                    alert(data.error || 'Error al borrar punto');
+                    if (response.status === 403) logout();
+                }
+            } catch (error) {
+                alert('Error de conexión');
+            }
+        }
+
+        async function savePointEdit(id, routeName, body) {
+            try {
+                const response = await fetch(`/api/tracks/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${sessionToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(body)
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    await reloadRoute(routeName);
+                } else {
+                    const details = data.details ? ': ' + data.details.join(', ') : '';
+                    alert((data.error || 'Error al actualizar punto') + details);
+                    if (response.status === 403) logout();
+                }
+            } catch (error) {
+                alert('Error de conexión');
+            }
+        }
+
+        async function deleteRoute(routeName) {
+            if (!confirm(`¿Borrar toda la ruta "${routeName}"? Esta acción no se puede deshacer.`)) return;
+
+            try {
+                const response = await fetch(`/api/routes/${routeName}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${sessionToken}` }
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    removeRouteFromMap(routeName);
+                    delete routeLayers[routeName];
+                    await loadRoutes();
+                } else {
+                    alert(data.error || 'Error al borrar ruta');
+                    if (response.status === 403) logout();
+                }
+            } catch (error) {
+                alert('Error de conexión');
+            }
+        }
+
+        async function reloadRoute(routeName) {
+            const route = routeLayers[routeName];
+            if (!route) return;
+
+            const checkbox = document.querySelector(`.route-checkbox[data-route="${routeName}"]`);
+            const index = checkbox ? parseInt(checkbox.dataset.index, 10) : 0;
+
+            await loadRouteData(routeName, index, true);
         }
 
         // ============================================
@@ -559,12 +774,7 @@
 
             try {
                 await Promise.all(visibleRoutes.map(async (routeName) => {
-                    const response = await fetch(`/api/tracks/${routeName}/latest?format=geojson`);
-                    const data = await response.json();
-
-                    if (response.ok) {
-                        updateRouteMarker(routeName, data);
-                    }
+                    await reloadRoute(routeName);
                 }));
 
                 updateLastUpdateTime();
@@ -573,45 +783,6 @@
                 console.error('Error en auto-actualización:', error);
                 updateStatus('❌ Error de actualización');
             }
-        }
-
-        function updateRouteMarker(routeName, pointData) {
-            const route = routeLayers[routeName];
-            if (!route || !route.visible) return;
-
-            const newId = pointData.properties.id;
-
-            // Verificar si es un punto nuevo comparando IDs
-            if (newId === route.lastId) {
-                // Es el mismo punto, no hacer nada
-                return;
-            }
-
-            const coords = [pointData.geometry.coordinates[1], pointData.geometry.coordinates[0]];
-            const props = pointData.properties;
-
-            // Mover marcador a la nueva posición
-            route.marker.setLatLng(coords);
-
-            // Extender polyline con el nuevo punto
-            const currentLatLngs = route.polyline.getLatLngs();
-            currentLatLngs.push(coords);
-            route.polyline.setLatLngs(currentLatLngs);
-
-            // Actualizar popup
-            route.marker.setPopupContent(`
-                <div class="route-popup">
-                    <h4>${routeName}</h4>
-                    <p><strong>Velocidad:</strong> ${props.speed || 'N/A'} km/h</p>
-                    <p><strong>Altitud:</strong> ${props.altitude || 'N/A'} m</p>
-                    <p><strong>Fecha:</strong> ${new Date(props.timestamp).toLocaleString('es-ES')}</p>
-                    <p><strong>Total puntos:</strong> ${currentLatLngs.length}</p>
-                </div>
-            `);
-
-            // Actualizar referencias del último punto
-            route.lastPoint = pointData;
-            route.lastId = newId;
         }
 
         function updateStats() {

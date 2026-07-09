@@ -67,6 +67,12 @@ const limiterLogin = rateLimit({
     message: { error: 'Demasiados intentos de login. Intenta más tarde.' }
 });
 
+const limiterAdmin = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 50,
+    message: { error: 'Demasiadas operaciones de administración. Intenta más tarde.' }
+});
+
 app.use('/api/track', limiterTrack);
 app.use('/api/login', limiterLogin);
 app.use('/api/', limiterGeneral);
@@ -141,11 +147,11 @@ function validateCoordinates(lat, lon) {
 function validateTrackData(data) {
     const errors = [];
     const { latitude, longitude, altitude, speed } = data;
-    
+
     // Validar coordenadas
     const coordErrors = validateCoordinates(latitude, longitude);
     errors.push(...coordErrors);
-    
+
     // Validar altitud (opcional)
     if (altitude !== undefined && altitude !== null) {
         if (typeof altitude !== 'number' || isNaN(altitude)) {
@@ -154,7 +160,7 @@ function validateTrackData(data) {
             errors.push('Altitud debe estar entre -500 y 9000 metros');
         }
     }
-    
+
     // Validar velocidad (opcional)
     if (speed !== undefined && speed !== null) {
         if (typeof speed !== 'number' || isNaN(speed)) {
@@ -163,7 +169,42 @@ function validateTrackData(data) {
             errors.push('Velocidad debe estar entre 0 y 500 km/h');
         }
     }
-    
+
+    return errors;
+}
+
+// Validar actualización parcial de un track
+function validateTrackUpdate(data) {
+    const errors = [];
+    const { latitude, longitude, altitude, speed } = data;
+
+    // Si se envía alguna coordenada, deben enviarse ambas
+    if (latitude !== undefined || longitude !== undefined) {
+        if (latitude === undefined || longitude === undefined) {
+            errors.push('Si se editan coordenadas, deben enviarse latitud y longitud juntas');
+        } else {
+            errors.push(...validateCoordinates(latitude, longitude));
+        }
+    }
+
+    // Validar altitud (opcional)
+    if (altitude !== undefined && altitude !== null) {
+        if (typeof altitude !== 'number' || isNaN(altitude)) {
+            errors.push('Altitud debe ser un número');
+        } else if (altitude < -500 || altitude > 9000) {
+            errors.push('Altitud debe estar entre -500 y 9000 metros');
+        }
+    }
+
+    // Validar velocidad (opcional)
+    if (speed !== undefined && speed !== null) {
+        if (typeof speed !== 'number' || isNaN(speed)) {
+            errors.push('Velocidad debe ser un número');
+        } else if (speed < 0 || speed > 500) {
+            errors.push('Velocidad debe estar entre 0 y 500 km/h');
+        }
+    }
+
     return errors;
 }
 
@@ -211,6 +252,32 @@ const verifyToken = (req, res, next) => {
     }
 };
 
+// Middleware para verificar sesión de administrador
+// Acepta Authorization: Bearer <token> o sessionToken en el body (legacy)
+const verifySession = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    let token = authHeader && authHeader.split(' ')[1];
+
+    if (!token && req.body && req.body.sessionToken) {
+        token = req.body.sessionToken;
+    }
+
+    if (!token) {
+        return res.status(401).json({ error: 'Token no proporcionado' });
+    }
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        if (decoded.type !== 'session') {
+            throw new Error('Token inválido');
+        }
+        req.adminSession = decoded;
+        next();
+    } catch (err) {
+        return res.status(403).json({ error: 'Sesión inválida o expirada' });
+    }
+};
+
 // ============================================
 // ENDPOINTS API
 // ============================================
@@ -232,17 +299,8 @@ app.post('/api/login', (req, res) => {
 });
 
 // Generar token para una ruta GPS
-app.post('/api/generate-token', async (req, res) => {
-    const { sessionToken, routeName } = req.body;
-
-    try {
-        const decoded = jwt.verify(sessionToken, JWT_SECRET);
-        if (decoded.type !== 'session') {
-            throw new Error('Token inválido');
-        }
-    } catch (err) {
-        return res.status(403).json({ error: 'Sesión inválida o expirada' });
-    }
+app.post('/api/generate-token', verifySession, async (req, res) => {
+    const { routeName } = req.body;
 
     const sanitizedName = sanitizeRouteName(routeName);
     if (!sanitizedName) {
@@ -255,8 +313,8 @@ app.post('/api/generate-token', async (req, res) => {
         { expiresIn: '30d' }
     );
 
-    res.json({ 
-        success: true, 
+    res.json({
+        success: true,
         token: routeToken,
         route_name: sanitizedName
     });
@@ -448,6 +506,121 @@ app.get('/api/routes/all', async (req, res) => {
     }
 });
 
+// Borrar una ruta completa (admin)
+app.delete('/api/routes/:route_name', verifySession, limiterAdmin, async (req, res) => {
+    const routeName = sanitizeRouteName(req.params.route_name);
+    if (!routeName) {
+        return res.status(400).json({ error: 'Nombre de ruta inválido' });
+    }
+
+    try {
+        const connection = await pool.getConnection();
+        const [result] = await connection.execute(
+            'DELETE FROM tracks WHERE route_name = ?',
+            [routeName]
+        );
+        connection.release();
+
+        res.json({
+            success: true,
+            deleted: result.affectedRows,
+            route: routeName
+        });
+    } catch (error) {
+        console.error('❌ Error al borrar ruta:', error.message);
+        res.status(500).json({ error: 'Error al borrar la ruta' });
+    }
+});
+
+// Borrar un punto por ID (admin)
+app.delete('/api/tracks/:id', verifySession, limiterAdmin, async (req, res) => {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id) || id <= 0) {
+        return res.status(400).json({ error: 'ID inválido' });
+    }
+
+    try {
+        const connection = await pool.getConnection();
+        const [result] = await connection.execute(
+            'DELETE FROM tracks WHERE id = ?',
+            [id]
+        );
+        connection.release();
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'Punto no encontrado' });
+        }
+
+        res.json({ success: true, id });
+    } catch (error) {
+        console.error('❌ Error al borrar punto:', error.message);
+        res.status(500).json({ error: 'Error al borrar el punto' });
+    }
+});
+
+// Actualizar un punto por ID (admin, parcial)
+app.put('/api/tracks/:id', verifySession, limiterAdmin, async (req, res) => {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id) || id <= 0) {
+        return res.status(400).json({ error: 'ID inválido' });
+    }
+
+    const { latitude, longitude, altitude, speed, timestamp_utc } = req.body;
+    const updates = {};
+    if (latitude !== undefined) updates.latitude = latitude;
+    if (longitude !== undefined) updates.longitude = longitude;
+    if (altitude !== undefined) updates.altitude = altitude;
+    if (speed !== undefined) updates.speed = speed;
+    if (timestamp_utc !== undefined) updates.timestamp_utc = timestamp_utc;
+
+    if (Object.keys(updates).length === 0) {
+        return res.status(400).json({ error: 'No se proporcionaron campos para actualizar' });
+    }
+
+    const validationErrors = validateTrackUpdate({ latitude, longitude, altitude, speed });
+    if (validationErrors.length > 0) {
+        return res.status(400).json({
+            error: 'Datos inválidos',
+            details: validationErrors
+        });
+    }
+
+    try {
+        const connection = await pool.getConnection();
+
+        const fields = [];
+        const values = [];
+        for (const [key, value] of Object.entries(updates)) {
+            fields.push(`${key} = ?`);
+            values.push(key === 'timestamp_utc' ? toMySQLDateTime(value) : value);
+        }
+        values.push(id);
+
+        const [result] = await connection.execute(
+            `UPDATE tracks SET ${fields.join(', ')} WHERE id = ?`,
+            values
+        );
+
+        if (result.affectedRows === 0) {
+            connection.release();
+            return res.status(404).json({ error: 'Punto no encontrado' });
+        }
+
+        const [rows] = await connection.execute(
+            `SELECT id, route_name, latitude, longitude, altitude,
+                    timestamp_utc, speed, created_at
+             FROM tracks WHERE id = ?`,
+            [id]
+        );
+        connection.release();
+
+        res.json({ success: true, point: rows[0] });
+    } catch (error) {
+        console.error('❌ Error al actualizar punto:', error.message);
+        res.status(500).json({ error: 'Error al actualizar el punto' });
+    }
+});
+
 // Endpoint de salud
 app.get('/api/health', async (req, res) => {
     try {
@@ -490,7 +663,10 @@ async function startServer() {
         console.log(`API GPS:  POST http://localhost:${PORT}/api/track`);
         console.log(`API GET:  GET  http://localhost:${PORT}/api/tracks/:route_name`);
         console.log(`API Last: GET  http://localhost:${PORT}/api/tracks/:route_name/latest`);
-        console.log(`API List: GET  http://localhost:${PORT}/api/routes/all\n`);
+        console.log(`API List: GET  http://localhost:${PORT}/api/routes/all`);
+        console.log(`API Admin:DELETE http://localhost:${PORT}/api/routes/:route_name`);
+        console.log(`API Admin:DELETE http://localhost:${PORT}/api/tracks/:id`);
+        console.log(`API Admin:PUT    http://localhost:${PORT}/api/tracks/:id\n`);
         console.log('📖 Parámetros GET:');
         console.log('   ?format=geojson  - Formato GeoJSON para Leaflet\n');
         console.log('💻 Comandos:');

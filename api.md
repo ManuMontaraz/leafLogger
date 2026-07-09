@@ -27,9 +27,17 @@ Authorization: Bearer <token_jwt>
 
 El token contiene el nombre de la ruta y es válido por 30 días.
 
-### Para consultar datos (GET /api/tracks/*)
+### Para consultar datos (GET /api/tracks/*, GET /api/routes/all)
 
 **No requiere autenticación** - Los endpoints de consulta son públicos.
+
+### Para operaciones de administración (DELETE /api/routes/*, DELETE /api/tracks/:id, PUT /api/tracks/:id)
+
+Usar el **session token** obtenido en `/api/login`:
+
+```
+Authorization: Bearer <session_token>
+```
 
 ---
 
@@ -254,6 +262,90 @@ curl http://localhost:3000/api/tracks/ruta-madrid/latest?format=geojson
     "altitude": 670.00,
     "speed": 12.50,
     "timestamp": "2024-01-15T16:45:00Z",
+    "created_at": "2024-01-15T16:45:02Z"
+  }
+}
+```
+
+---
+
+### DELETE /api/routes/:route_name
+
+Borra **todos** los puntos de una ruta. Requiere sesión de administrador.
+
+**Headers:**
+```
+Authorization: Bearer <session_token>
+```
+
+**Respuesta:**
+```json
+{
+  "success": true,
+  "deleted": 1250,
+  "route": "ruta-madrid"
+}
+```
+
+---
+
+### DELETE /api/tracks/:id
+
+Borra un punto GPS por su `id`. Requiere sesión de administrador.
+
+**Headers:**
+```
+Authorization: Bearer <session_token>
+```
+
+**Respuesta:**
+```json
+{
+  "success": true,
+  "id": 42
+}
+```
+
+---
+
+### PUT /api/tracks/:id
+
+Actualiza un punto GPS de forma **parcial**. Requiere sesión de administrador.
+
+**Headers:**
+```
+Authorization: Bearer <session_token>
+Content-Type: application/json
+```
+
+**Body (todos los campos son opcionales):**
+```json
+{
+  "latitude": 40.4168,
+  "longitude": -3.7038,
+  "altitude": 670.0,
+  "speed": 12.5,
+  "timestamp_utc": "2024-01-15T16:45:00Z"
+}
+```
+
+**Notas:**
+- Si se envía `latitude` o `longitude`, deben enviarse **ambas**.
+- Los campos omitidos no se modifican.
+- No se puede cambiar la ruta (`route_name`).
+
+**Respuesta:**
+```json
+{
+  "success": true,
+  "point": {
+    "id": 42,
+    "route_name": "ruta-madrid",
+    "latitude": 40.4168,
+    "longitude": -3.7038,
+    "altitude": 670.00,
+    "timestamp_utc": "2024-01-15T16:45:00Z",
+    "speed": 12.50,
     "created_at": "2024-01-15T16:45:02Z"
   }
 }
