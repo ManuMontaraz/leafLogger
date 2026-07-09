@@ -452,7 +452,7 @@
             if (features.length === 0) return;
 
             // Extraer coordenadas para la polyline
-            const latlngs = features.map(f => [f.geometry.coordinates[1], f.geometry.coordinates[0]]);
+            const latlngs = features.map(f => [parseFloat(f.geometry.coordinates[1]), parseFloat(f.geometry.coordinates[0])]);
 
             // Crear polyline conectando todos los puntos
             const polyline = L.polyline(latlngs, {
@@ -465,7 +465,7 @@
             const markers = [];
             features.forEach((feature, index) => {
                 const isLast = index === features.length - 1;
-                const coords = [feature.geometry.coordinates[1], feature.geometry.coordinates[0]];
+                const coords = [parseFloat(feature.geometry.coordinates[1]), parseFloat(feature.geometry.coordinates[0])];
 
                 const marker = L.circleMarker(coords, {
                     radius: isLast ? 8 : 5,
@@ -544,7 +544,8 @@
         // ============================================
         function createPointViewPopup(routeName, feature, isLast) {
             const props = feature.properties;
-            const [lon, lat] = feature.geometry.coordinates;
+            const lon = parseFloat(feature.geometry.coordinates[0]);
+            const lat = parseFloat(feature.geometry.coordinates[1]);
             return `
                 <div class="point-popup">
                     <h4>${isLast ? '📍 Posición actual' : 'Punto ' + props.id}</h4>
@@ -564,7 +565,8 @@
 
         function createPointEditPopup(routeName, feature) {
             const props = feature.properties;
-            const [lon, lat] = feature.geometry.coordinates;
+            const lon = parseFloat(feature.geometry.coordinates[0]);
+            const lat = parseFloat(feature.geometry.coordinates[1]);
             return `
                 <form class="edit-form" data-point-id="${props.id}">
                     <h4>Editar punto ${props.id}</h4>

@@ -216,13 +216,13 @@ function toGeoJSON(points, routeName) {
             type: 'Feature',
             geometry: {
                 type: 'Point',
-                coordinates: [point.longitude, point.latitude]
+                coordinates: [Number(point.longitude), Number(point.latitude)]
             },
             properties: {
                 id: point.id,
                 route_name: point.route_name,
-                altitude: point.altitude,
-                speed: point.speed,
+                altitude: point.altitude !== null && point.altitude !== undefined ? Number(point.altitude) : null,
+                speed: point.speed !== null && point.speed !== undefined ? Number(point.speed) : null,
                 timestamp: point.timestamp_utc,
                 created_at: point.created_at
             }
