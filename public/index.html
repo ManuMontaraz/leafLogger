@@ -199,6 +199,7 @@
         logoutBtn.addEventListener('click', logout);
         selectAllBtn.addEventListener('click', () => selectFirstN(DEFAULT_VISIBLE));
         deselectAllBtn.addEventListener('click', deselectAll);
+        document.addEventListener('submit', handleEditFormSubmit);
 
         // ============================================
         // FUNCIONES DE AUTENTICACIÓN
@@ -433,7 +434,7 @@
             }
 
             try {
-                const response = await fetch(`/api/tracks/${routeName}?format=geojson`);
+                const response = await fetch(`/api/tracks/${routeName}?format=geojson&_t=${Date.now()}`);
                 const data = await response.json();
 
                 if (response.ok) {
@@ -563,12 +564,17 @@
             `;
         }
 
-        function createPointEditPopup(routeName, feature) {
+        function createPointEditPopup(routeName, feature, isLast) {
             const props = feature.properties;
             const lon = parseFloat(feature.geometry.coordinates[0]);
             const lat = parseFloat(feature.geometry.coordinates[1]);
+            const featureJson = encodeURIComponent(JSON.stringify(feature));
             return `
-                <form class="edit-form" data-point-id="${props.id}">
+                <form class="edit-form"
+                      data-point-id="${props.id}"
+                      data-route-name="${routeName}"
+                      data-is-last="${isLast}"
+                      data-feature="${featureJson}">
                     <h4>Editar punto ${props.id}</h4>
                     <label>Latitud <input type="number" step="any" name="latitude" value="${lat}" required></label>
                     <label>Longitud <input type="number" step="any" name="longitude" value="${lon}" required></label>
@@ -593,8 +599,11 @@
             if (editBtn) {
                 editBtn.addEventListener('click', (e) => {
                     e.preventDefault();
-                    marker.setPopupContent(createPointEditPopup(routeName, feature));
-                    attachEditListeners(marker, routeName, feature, isLast);
+                    marker.setPopupContent(createPointEditPopup(routeName, feature, isLast));
+                    // Dar tiempo a Leaflet a renderizar el nuevo DOM del popup
+                    setTimeout(() => {
+                        attachEditListeners(marker, routeName, feature, isLast);
+                    }, 50);
                 });
             }
 
@@ -651,6 +660,39 @@
         // ============================================
         // OPERACIONES DE ADMIN
         // ============================================
+
+        // Fallback global para el formulario de edición. Captura el submit
+        // aunque el listener local no se haya enganchado correctamente.
+        function handleEditFormSubmit(e) {
+            const form = e.target;
+            if (!form.classList.contains('edit-form')) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            const id = parseInt(form.dataset.pointId, 10);
+            const routeName = form.dataset.routeName;
+
+            const formData = new FormData(form);
+            const body = {};
+
+            const latitude = parseFloat(String(formData.get('latitude')).replace(',', '.'));
+            const longitude = parseFloat(String(formData.get('longitude')).replace(',', '.'));
+            if (!isNaN(latitude)) body.latitude = latitude;
+            if (!isNaN(longitude)) body.longitude = longitude;
+
+            const altitude = String(formData.get('altitude')).replace(',', '.');
+            if (altitude !== '') body.altitude = parseFloat(altitude);
+
+            const speed = String(formData.get('speed')).replace(',', '.');
+            if (speed !== '') body.speed = parseFloat(speed);
+
+            const timestamp = formData.get('timestamp_utc');
+            if (timestamp !== '') body.timestamp_utc = timestamp;
+
+            savePointEdit(id, routeName, body);
+        }
+
         async function deletePoint(id, routeName) {
             if (!confirm(`¿Borrar el punto ${id}?`)) return;
 
