@@ -78,16 +78,22 @@ Content-Type: application/json
 ```json
 {
   "sessionToken": "<token_de_sesion>",
-  "routeName": "ruta-madrid"
+  "routeName": "ruta-madrid",
+  "expiresIn": "30d"
 }
 ```
+
+**Parámetros:**
+- `routeName` (requerido): nombre de la ruta.
+- `expiresIn` (opcional): duración del token. Valores válidos: `1d`, `7d`, `30d`, `90d`, `1y`, `never`. Si no se envía, se usa el valor por defecto configurado en `ROUTE_TOKEN_EXPIRY` (default: `30d`).
 
 **Respuesta:**
 ```json
 {
   "success": true,
   "token": "eyJhbGciOiJIUzI1NiIs...",
-  "route_name": "ruta-madrid"
+  "route_name": "ruta-madrid",
+  "expires_in": "30d"
 }
 ```
 
@@ -95,6 +101,7 @@ Content-Type: application/json
 - El nombre de ruta se sanitiza automáticamente (solo letras, números, guiones)
 - Se convierte a minúsculas
 - Máximo 100 caracteres
+- `expiresIn: "never"` genera un token JWT sin fecha de expiración
 
 ---
 

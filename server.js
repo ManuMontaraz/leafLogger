@@ -27,6 +27,22 @@ const ADMIN_USER = process.env.ADMIN_USER;
 const ADMIN_PASS = process.env.ADMIN_PASS;
 const DB_NAME = process.env.DB_NAME || 'apiLogger';
 
+// Configuración de expiración de tokens de ruta
+const ALLOWED_EXPIRIES = ['1d', '7d', '30d', '90d', '1y', 'never'];
+const DEFAULT_ROUTE_TOKEN_EXPIRY = normalizeExpiry(process.env.ROUTE_TOKEN_EXPIRY) || '30d';
+
+function normalizeExpiry(value) {
+    if (!value || typeof value !== 'string') return null;
+    const normalized = value.trim().toLowerCase();
+    if (normalized === '0' || normalized === 'infinite' || normalized === 'never' || normalized === '') {
+        return 'never';
+    }
+    if (ALLOWED_EXPIRIES.includes(normalized)) {
+        return normalized;
+    }
+    return null;
+}
+
 // Validar configuración
 if (!JWT_SECRET || !ADMIN_USER || !ADMIN_PASS) {
     console.error('❌ Error: Faltan variables de entorno requeridas en .env');
@@ -300,23 +316,44 @@ app.post('/api/login', (req, res) => {
 
 // Generar token para una ruta GPS
 app.post('/api/generate-token', verifySession, async (req, res) => {
-    const { routeName } = req.body;
+    const { routeName, expiresIn } = req.body;
 
     const sanitizedName = sanitizeRouteName(routeName);
     if (!sanitizedName) {
         return res.status(400).json({ error: 'Nombre de ruta inválido' });
     }
 
+    // Determinar duración del token
+    let requestedExpiry;
+    if (expiresIn === undefined || expiresIn === null || expiresIn === '') {
+        requestedExpiry = DEFAULT_ROUTE_TOKEN_EXPIRY;
+    } else {
+        requestedExpiry = normalizeExpiry(expiresIn);
+        if (!requestedExpiry) {
+            return res.status(400).json({
+                error: 'Duración de token inválida',
+                details: `Valores válidos: ${ALLOWED_EXPIRIES.join(', ')}`
+            });
+        }
+    }
+
+    const signOptions = { route_name: sanitizedName };
+    const jwtOptions = {};
+    if (requestedExpiry !== 'never') {
+        jwtOptions.expiresIn = requestedExpiry;
+    }
+
     const routeToken = jwt.sign(
-        { route_name: sanitizedName },
+        signOptions,
         JWT_SECRET,
-        { expiresIn: '30d' }
+        jwtOptions
     );
 
     res.json({
         success: true,
         token: routeToken,
-        route_name: sanitizedName
+        route_name: sanitizedName,
+        expires_in: requestedExpiry
     });
 });
 

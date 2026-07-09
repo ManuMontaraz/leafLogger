@@ -48,6 +48,18 @@
                     <input type="text" id="routeName" name="routeName" placeholder="Ej: ruta-madrid, viaje-playa, etc." required>
                     <small>Este nombre se incluirá en el token JWT</small>
                 </div>
+                <div class="form-group">
+                    <label for="tokenExpiry">Validez del Token:</label>
+                    <select id="tokenExpiry" name="tokenExpiry">
+                        <option value="1d">1 día</option>
+                        <option value="7d">7 días</option>
+                        <option value="30d" selected>30 días</option>
+                        <option value="90d">90 días</option>
+                        <option value="1y">1 año</option>
+                        <option value="never">Nunca expira</option>
+                    </select>
+                    <small>Puedes cambiar la duración por defecto con la variable ROUTE_TOKEN_EXPIRY en .env</small>
+                </div>
                 <button type="submit" class="btn btn-success">Generar Token</button>
             </form>
 
@@ -59,7 +71,7 @@
                 </div>
                 <div class="token-info">
                     <p><strong>Ruta:</strong> <span id="routeDisplay"></span></p>
-                    <p><strong>Validez:</strong> 30 días</p>
+                    <p><strong>Validez:</strong> <span id="expiryDisplay"></span></p>
                     <p class="hint">Usa este token en el header <code>Authorization: Bearer &lt;token&gt;</code> al enviar datos GPS.</p>
                 </div>
             </div>
@@ -240,12 +252,13 @@
             e.preventDefault();
 
             const routeName = document.getElementById('routeName').value;
+            const expiresIn = document.getElementById('tokenExpiry').value;
 
             try {
                 const response = await fetch('/api/generate-token', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sessionToken, routeName })
+                    body: JSON.stringify({ sessionToken, routeName, expiresIn })
                 });
 
                 const data = await response.json();
@@ -253,6 +266,7 @@
                 if (response.ok && data.success) {
                     document.getElementById('tokenDisplay').value = data.token;
                     document.getElementById('routeDisplay').textContent = data.route_name;
+                    document.getElementById('expiryDisplay').textContent = formatExpiry(data.expires_in);
                     tokenResult.classList.remove('hidden');
                 } else {
                     alert(data.error || 'Error al generar token');
@@ -263,6 +277,18 @@
             } catch (error) {
                 alert('Error de conexión');
             }
+        }
+
+        function formatExpiry(expiresIn) {
+            const labels = {
+                '1d': '1 día',
+                '7d': '7 días',
+                '30d': '30 días',
+                '90d': '90 días',
+                '1y': '1 año',
+                'never': 'Nunca expira'
+            };
+            return labels[expiresIn] || expiresIn;
         }
 
         function copyToken() {

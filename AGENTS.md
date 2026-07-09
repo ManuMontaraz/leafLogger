@@ -33,6 +33,7 @@ El resto tiene defaults:
 - `PORT=3000`
 - `DB_HOST=localhost`, `DB_USER=root`, `DB_PASS=''`, `DB_NAME=apiLogger`
 - `CORS_ORIGIN` (vacío = CORS deshabilitado; `*` = todos; lista separada por comas = orígenes permitidos con credenciales)
+- `ROUTE_TOKEN_EXPIRY=30d` (valores válidos: `1d`, `7d`, `30d`, `90d`, `1y`, `never`/`0`/`infinite`; `never` genera token sin expiración)
 
 ## Base de datos
 
