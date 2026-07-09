@@ -629,15 +629,15 @@
                     const formData = new FormData(form);
                     const body = {};
 
-                    const latitude = parseFloat(formData.get('latitude'));
-                    const longitude = parseFloat(formData.get('longitude'));
+                    const latitude = parseFloat(String(formData.get('latitude')).replace(',', '.'));
+                    const longitude = parseFloat(String(formData.get('longitude')).replace(',', '.'));
                     if (!isNaN(latitude)) body.latitude = latitude;
                     if (!isNaN(longitude)) body.longitude = longitude;
 
-                    const altitude = formData.get('altitude');
+                    const altitude = String(formData.get('altitude')).replace(',', '.');
                     if (altitude !== '') body.altitude = parseFloat(altitude);
 
-                    const speed = formData.get('speed');
+                    const speed = String(formData.get('speed')).replace(',', '.');
                     if (speed !== '') body.speed = parseFloat(speed);
 
                     const timestamp = formData.get('timestamp_utc');
@@ -686,13 +686,14 @@
 
                 if (response.ok) {
                     await reloadRoute(routeName);
+                    alert('✅ Punto actualizado correctamente');
                 } else {
                     const details = data.details ? ': ' + data.details.join(', ') : '';
-                    alert((data.error || 'Error al actualizar punto') + details);
+                    alert('❌ ' + (data.error || 'Error al actualizar punto') + details);
                     if (response.status === 403) logout();
                 }
             } catch (error) {
-                alert('Error de conexión');
+                alert('❌ Error de conexión');
             }
         }
 

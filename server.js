@@ -585,8 +585,9 @@ app.put('/api/tracks/:id', verifySession, limiterAdmin, async (req, res) => {
         });
     }
 
+    let connection;
     try {
-        const connection = await pool.getConnection();
+        connection = await pool.getConnection();
 
         const fields = [];
         const values = [];
@@ -602,7 +603,6 @@ app.put('/api/tracks/:id', verifySession, limiterAdmin, async (req, res) => {
         );
 
         if (result.affectedRows === 0) {
-            connection.release();
             return res.status(404).json({ error: 'Punto no encontrado' });
         }
 
@@ -612,12 +612,13 @@ app.put('/api/tracks/:id', verifySession, limiterAdmin, async (req, res) => {
              FROM tracks WHERE id = ?`,
             [id]
         );
-        connection.release();
 
         res.json({ success: true, point: rows[0] });
     } catch (error) {
         console.error('❌ Error al actualizar punto:', error.message);
         res.status(500).json({ error: 'Error al actualizar el punto' });
+    } finally {
+        if (connection) connection.release();
     }
 });
 
